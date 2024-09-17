@@ -32,7 +32,13 @@ def get_res(string, model='gpt-4-1106-preview', temperature=0,message=None):
     try:
         if message is None:
             message = [{"role": "user", "content": string}]
-        if trustllm.config.azure_openai:
+        if trustllm.config.use_local_host:
+            from text_generation import Client
+            client = Client(f"http://127.0.0.1:{trustllm.config.local_port}")
+            
+            response = client.generate(string, max_new_tokens=256).generated_text
+            
+        elif trustllm.config.azure_openai:
             azure_endpoint = trustllm.config.azure_api_base
             api_key = trustllm.config.azure_api_key
             api_version = trustllm.config.azure_api_version
@@ -64,9 +70,12 @@ def get_res(string, model='gpt-4-1106-preview', temperature=0,message=None):
                                                     messages=message,
                                                         temperature=temperature,
                                                         )
-        if not stream.choices[0].message.content:
-                raise ValueError("The response from the API is NULL or an empty string!")
-        response = stream.choices[0].message.content
+        
+        
+        if not trustllm.config.use_local_host:
+            if not stream.choices[0].message.content:
+                    raise ValueError("The response from the API is NULL or an empty string!")
+            response = stream.choices[0].message.content
     except Exception as e:
         print(e)
         return None

@@ -1,4 +1,6 @@
 # evaluation api setting
+use_local_host = False
+local_port = 8081
 openai_key = "" #TODO
 openai_api_base=None
 perspective_key = None

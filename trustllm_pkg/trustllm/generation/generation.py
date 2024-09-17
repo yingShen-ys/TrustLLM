@@ -18,6 +18,7 @@ class LLMGeneration:
     def __init__(self,
                  test_type,
                  data_path,
+                 model_name,
                  model_path,
                  online_model=False,
                  use_deepinfra=False,
@@ -26,8 +27,12 @@ class LLMGeneration:
                  num_gpus=1,
                  max_new_tokens=512,
                  debug=False,
+                 model=None,
+                 tokenizer=None
                  ):
-        self.model_name = ""
+        self.model = model
+        self.tokenizer = tokenizer
+        self.model_name = model_name
         self.model_path = model_path
         self.test_type = test_type
         self.data_path = data_path
@@ -42,7 +47,6 @@ class LLMGeneration:
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.use_replicate = use_replicate
         self.use_deepinfra = use_deepinfra
-        self.model_name = model_mapping.get(self.model_path, "")
 
     def _generation_hf(self, prompt, tokenizer, model, temperature):
         """
@@ -264,15 +268,19 @@ class LLMGeneration:
         model_name = self.model_name
         print(f"Beginning generation with {self.test_type} evaluation at temperature {self.temperature}.")
         print(f"Evaluation target model: {model_name}")
-        if (model_name in self.online_model_list) and ((self.online_model and self.use_replicate) or (self.online_model and self.use_deepinfra)):
-            model, tokenizer = (None, None) 
+        if self.model is not None:
+            model = self.model
+            tokenizer = self.tokenizer
         else:
-            model, tokenizer = load_model(
-            self.model_path,
-            num_gpus=self.num_gpus,
-            device=self.device,
-            debug=self.debug,
-        )
+            if (model_name in self.online_model_list) and ((self.online_model and self.use_replicate) or (self.online_model and self.use_deepinfra)):
+                model, tokenizer = (None, None) 
+            else:
+                model, tokenizer = load_model(
+                self.model_path,
+                num_gpus=self.num_gpus,
+                device=self.device,
+                debug=self.debug,
+            )
 
         test_functions = {
             'robustness': self.run_robustness,
